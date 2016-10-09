@@ -685,7 +685,7 @@ class Visualizer(gobject.GObject):
         _zoom_changed(zoom_adj)
 
         # speed
-        speed_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
+        speed_adj = gtk.Adjustment(0.5, 0.01, 10.0, 0.02, 1.0, 0)
         def _speed_changed(adj):
             self.speed = adj.value
             self.sample_period = SAMPLE_PERIOD*adj.value
@@ -781,10 +781,23 @@ class Visualizer(gobject.GObject):
             else:
                 graph.add_node(node_name)
 
+            # node 0,  node 1 are two switches
+            if 0 == nodeI or 1 == nodeI:
+                if not is_node_set_color:
+                    node_view.set_color("gray")
+                    is_node_set_color = True
+            # node 5, node 6 are two hosts that doesnt move, acting as servers
+            elif 5 == nodeI or 6 == nodeI:
+                if not is_node_set_color:
+                    node_view.set_color("orange")
+                    is_node_set_color = True
+            
+            # for any other nodes except node 0,1,5,6
             # for every device in this node
             for devI in range(node.GetNDevices()):
                 device = node.GetDevice(devI)
                 device_traits = lookup_netdevice_traits(type(device))
+
 
                 if device_traits.is_csma:
                     #continue
@@ -798,8 +811,11 @@ class Visualizer(gobject.GObject):
                         node_view.set_color("red")
                         is_node_set_color = True
                 elif device_traits.is_virtual:
-                    continue
+                    #continue
                     #print "[*by CQQ*] This is VIRTUAL device! No color !"
+                    if not is_node_set_color:
+                        node_view.set_color("gray")
+                        is_node_set_color = True
 
                 channel = device.GetChannel()
                 # Edited by cqq, it channel is None, continue
