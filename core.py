@@ -863,6 +863,7 @@ class Visualizer(gobject.GObject):
             if node_type == 'Node':
                 obj = self.nodes[int(node_id)]
             elif node_type == 'Channel':
+                print "node_type: %s, node_id: %s" % (node_type, node_id)
                 obj = self.channels[int(node_id)]
             obj.set_position(pos_x, pos_y)
 
