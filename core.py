@@ -4,7 +4,7 @@ from __future__ import division
 
 LAYOUT_ALGORITHM = 'neato' # ['neato'|'dot'|'twopi'|'circo'|'fdp'|'nop']
 REPRESENT_CHANNELS_AS_NODES = 1
-DEFAULT_NODE_SIZE = 2.0 # default node size in meters
+DEFAULT_NODE_SIZE = 4.0 # default node size in meters
 DEFAULT_TRANSMISSIONS_MEMORY = 5 # default number of of past intervals whose transmissions are remembered
 BITRATE_FONT_SIZE = 10
 
@@ -672,7 +672,7 @@ class Visualizer(gobject.GObject):
         vbox.pack_start(hbox, False, False, 4)
 
         # zoom
-        zoom_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
+        zoom_adj = gtk.Adjustment(0.7, 0.01, 10.0, 0.02, 1.0, 0)
         self.zoom = zoom_adj
         def _zoom_changed(adj):
             self.canvas.set_scale(adj.value)
@@ -685,7 +685,7 @@ class Visualizer(gobject.GObject):
         _zoom_changed(zoom_adj)
 
         # speed
-        speed_adj = gtk.Adjustment(0.5, 0.01, 10.0, 0.02, 1.0, 0)
+        speed_adj = gtk.Adjustment(1, 0.01, 10.0, 0.02, 1.0, 0)
         def _speed_changed(adj):
             self.speed = adj.value
             self.sample_period = SAMPLE_PERIOD*adj.value
@@ -781,17 +781,21 @@ class Visualizer(gobject.GObject):
             else:
                 graph.add_node(node_name)
 
-            # node 0,  node 1 are two switches
+            # node 0,  node 1 are two "switches"
             if 0 == nodeI or 1 == nodeI:
                 if not is_node_set_color:
                     node_view.set_color("gray")
                     is_node_set_color = True
-            # node 5, node 6 are two hosts that doesnt move, acting as servers
+            # node 5, node 6 are two "hosts" that doesnt move, acting as servers
             elif 5 == nodeI or 6 == nodeI:
                 if not is_node_set_color:
                     node_view.set_color("orange")
                     is_node_set_color = True
-            
+            # node 15, is the "controller"
+            elif 15 == nodeI:
+                if not is_node_set_color:
+                    node_view.set_color("green")
+                    is_node_set_color = True
             # for any other nodes except node 0,1,5,6
             # for every device in this node
             for devI in range(node.GetNDevices()):
@@ -863,6 +867,7 @@ class Visualizer(gobject.GObject):
             if node_type == 'Node':
                 obj = self.nodes[int(node_id)]
             elif node_type == 'Channel':
+                print "node_type: %s, node_id: %s" % (node_type, node_id)
                 obj = self.channels[int(node_id)]
             obj.set_position(pos_x, pos_y)
 
