@@ -4,7 +4,7 @@ from __future__ import division
 
 LAYOUT_ALGORITHM = 'neato' # ['neato'|'dot'|'twopi'|'circo'|'fdp'|'nop']
 REPRESENT_CHANNELS_AS_NODES = 1
-DEFAULT_NODE_SIZE = 4.0 # default node size in meters
+DEFAULT_NODE_SIZE = 3.0 # default node size in meters
 DEFAULT_TRANSMISSIONS_MEMORY = 5 # default number of of past intervals whose transmissions are remembered
 BITRATE_FONT_SIZE = 10
 
@@ -155,7 +155,7 @@ class Node(PyVizObject):
         self.svg_item.set_properties(x=(x - (1-self.svg_align_x)*w),
                                      y=(y - (1-self.svg_align_y)*h))
         
-#TODO--------------------------
+
     def tooltip_query(self, tooltip):
         self.visualizer.simulation.lock.acquire()
         try:
@@ -242,8 +242,7 @@ class Node(PyVizObject):
             alpha = 0x80
         else:
             alpha = 0xff
-        fill_color_rgba = (self._color & 0xffffff00) | alpha   # this one seems yellow
-        #fill_color_rgba = (self._color & 0xff00ffff) | alpha  # this one seems green
+        fill_color_rgba = (self._color & 0xffffff00) | alpha
         self.canvas_item.set_properties(radius_x=size, radius_y=size,
                                         fill_color_rgba=fill_color_rgba)
         if self._selected:
@@ -251,9 +250,9 @@ class Node(PyVizObject):
         else:
             line_width = size*.15
         if self.highlighted:
-            stroke_color = 'yellow'  # the node color when highlighted
+            stroke_color = 'yellow'
         else:
-            stroke_color = 'black'   # the node color when you selected and left focus
+            stroke_color = 'black'
         self.canvas_item.set_properties(line_width=line_width, stroke_color=stroke_color)
 
         if self._label is not None:
@@ -313,7 +312,7 @@ class Node(PyVizObject):
             self._has_mobility = (mobility is not None)
         return self._has_mobility
 
-# TODO------------------
+
 class Channel(PyVizObject):
     def __init__(self, channel):
         self.channel = channel
@@ -342,7 +341,7 @@ class WiredLink(Link):
         assert isinstance(node2, (Node, Channel))
         self.node1 = node1
         self.node2 = node2
-        self.canvas_item = goocanvas.Path(line_width=1.0, stroke_color="black")   ## The width && color of the wired line
+        self.canvas_item = goocanvas.Path(line_width=1.0, stroke_color="black")
         self.canvas_item.set_data("pyviz-object", self)
         self.node1.links.append(self)
         self.node2.links.append(self)
@@ -351,6 +350,7 @@ class WiredLink(Link):
         pos1_x, pos1_y = self.node1.get_position()
         pos2_x, pos2_y = self.node2.get_position()
         self.canvas_item.set_property("data", "M %r %r L %r %r" % (pos1_x, pos1_y, pos2_x, pos2_y))
+
 
 
 class SimulationThread(threading.Thread):
@@ -492,7 +492,6 @@ class Visualizer(gobject.GObject):
         main_hbox1 = gobject.new(gtk.HBox, border_width=8, visible=True)
         main_vbox.pack_start(main_hbox1)
 
-        # -- Show transmissions
         show_transmissions_group = HIGContainer("Show transmissions")
         show_transmissions_group.show()
         main_hbox1.pack_start(show_transmissions_group, False, False, 8)
@@ -501,21 +500,18 @@ class Visualizer(gobject.GObject):
         vbox.show()
         show_transmissions_group.add(vbox)
 
-        # radio button: "All nodes"
         all_nodes = gtk.RadioButton(None)
         all_nodes.set_label("All nodes")
         all_nodes.set_active(True)
         all_nodes.show()
         vbox.add(all_nodes)
 
-        # radio button: "Selected node"
         selected_node = gtk.RadioButton(all_nodes)
         selected_node.show()
         selected_node.set_label("Selected node")
         selected_node.set_active(False)
         vbox.add(selected_node)
         
-        # radio button: "Disabled"
         no_node = gtk.RadioButton(all_nodes)
         no_node.show()
         no_node.set_label("Disabled")
@@ -538,7 +534,7 @@ class Visualizer(gobject.GObject):
         selected_node.connect("toggled", toggled)
 
         
-        # -- Misc Settings
+        # -- misc settings
         misc_settings_group = HIGContainer("Misc Settings")
         misc_settings_group.show()
         main_hbox1.pack_start(misc_settings_group, False, False, 8)
@@ -556,7 +552,7 @@ class Visualizer(gobject.GObject):
             for node in self.nodes.itervalues():
                 node.set_size(adj.value)
         self.node_size_adjustment.connect("value-changed", node_size_changed)
-        self.node_size_adjustment.set_all(DEFAULT_NODE_SIZE, 0.01, 20, 0.1)    ## default = DEFAULT_NODE_SIZE, min = 0.01, max =20
+        self.node_size_adjustment.set_all(DEFAULT_NODE_SIZE, 0.01, 20, 0.1)
 
         # --> transmissions smooth factor
         vbox = gobject.new(gtk.VBox, border_width=0, visible=True)
@@ -672,7 +668,7 @@ class Visualizer(gobject.GObject):
         vbox.pack_start(hbox, False, False, 4)
 
         # zoom
-        zoom_adj = gtk.Adjustment(0.7, 0.01, 10.0, 0.02, 1.0, 0)
+        zoom_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
         self.zoom = zoom_adj
         def _zoom_changed(adj):
             self.canvas.set_scale(adj.value)
@@ -685,7 +681,7 @@ class Visualizer(gobject.GObject):
         _zoom_changed(zoom_adj)
 
         # speed
-        speed_adj = gtk.Adjustment(1, 0.01, 10.0, 0.02, 1.0, 0)
+        speed_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
         def _speed_changed(adj):
             self.speed = adj.value
             self.sample_period = SAMPLE_PERIOD*adj.value
@@ -753,112 +749,66 @@ class Visualizer(gobject.GObject):
         self.window.show()
 
     def scan_topology(self):
-        print "[*] scanning topology: %i nodes..." % (ns.network.NodeList.GetNNodes(),)
+        print "scanning topology: %i nodes..." % (ns.network.NodeList.GetNNodes(),)
         graph = pygraphviz.AGraph()
         seen_nodes = 0
-        # for every node
         for nodeI in range(ns.network.NodeList.GetNNodes()):
-            # For one node, its color is only set once.
-            # This var is set for the type of node that contains more than one kind of device 
-            is_node_set_color = False
             seen_nodes += 1
             if seen_nodes == 100:
-                print "[*] scan topology... %i nodes visited (%.1f%%)" % (nodeI, 100*nodeI/ns.network.NodeList.GetNNodes())
+                print "scan topology... %i nodes visited (%.1f%%)" % (nodeI, 100*nodeI/ns.network.NodeList.GetNNodes())
                 seen_nodes = 0
             node = ns.network.NodeList.GetNode(nodeI)
             node_name = "Node %i" % nodeI
-            node_view = self.get_node_view(nodeI)
+            node_view = self.get_node(nodeI)
 
-            # Get the mobility of this node
             mobility = node.GetObject(ns.mobility.MobilityModel.GetTypeId())
             if mobility is not None:
-                #node_view.set_color("red")  ## wow !!! we could change the color here? yes, it works
-                #node_view.set_color("blue")
-                #TODO set color according to the node type, e.g. `AP` set to RED, and `STA` set to BLUE 
+                node_view.set_color("red")
                 pos = mobility.GetPosition()
                 node_view.set_position(*transform_point_simulation_to_canvas(pos.x, pos.y))
                 #print "node has mobility position -> ", "%f,%f" % (pos.x, pos.y)
             else:
                 graph.add_node(node_name)
 
-            # node 0,  node 1 are two "switches"
-            if 0 == nodeI or 1 == nodeI:
-                if not is_node_set_color:
-                    node_view.set_color("gray")
-                    is_node_set_color = True
-            # node 5, node 6 are two "hosts" that doesnt move, acting as servers
-            elif 5 == nodeI or 6 == nodeI:
-                if not is_node_set_color:
-                    node_view.set_color("orange")
-                    is_node_set_color = True
-            # node 15, is the "controller"
-            elif 15 == nodeI:
-                if not is_node_set_color:
-                    node_view.set_color("green")
-                    is_node_set_color = True
-            # for any other nodes except node 0,1,5,6
-            # for every device in this node
             for devI in range(node.GetNDevices()):
                 device = node.GetDevice(devI)
                 device_traits = lookup_netdevice_traits(type(device))
-
-
-                if device_traits.is_csma:
-                    #continue
-                    #print "[*by CQQ*] This is CSMA device. Setting its node color to BLUE !"
-                    if not is_node_set_color:
-                        node_view.set_color("blue")
-                        is_node_set_color = True
-                elif device_traits.is_wireless:
-                    #print "[*by CQQ*] This is WIRELESS device! Setting its node color to RED !"
-                    if not is_node_set_color:
-                        node_view.set_color("red")
-                        is_node_set_color = True
-                elif device_traits.is_virtual:
-                    #continue
-                    #print "[*by CQQ*] This is VIRTUAL device! No color !"
-                    if not is_node_set_color:
-                        node_view.set_color("gray")
-                        is_node_set_color = True
-
-                channel = device.GetChannel()
-                # Edited by cqq, it channel is None, continue
-                if not channel:
+                if device_traits.is_wireless:
                     continue
-
-                if channel.GetNDevices() > 2:    # initially set to 2
+                if device_traits.is_virtual:
+                    continue
+                channel = device.GetChannel()
+                if channel.GetNDevices() > 2:
                     if REPRESENT_CHANNELS_AS_NODES:
                         # represent channels as white nodes
                         if mobility is None:
                             channel_name = "Channel %s" % id(channel)
                             graph.add_edge(node_name, channel_name)
-                        # !!! To avoid the appearance of theugly big circle
-                        #self.get_channel(channel)
-                        # Edited by cqq. !!! To avoid creating lines to the gray circle
-                        #self.create_link(self.get_node_view(nodeI), self.get_channel(channel))    ## connect the node to the channel
+                        self.get_channel(channel)
+                        self.create_link(self.get_node(nodeI), self.get_channel(channel))
                     else:
                         # don't represent channels, just add links between nodes in the same channel
                         for otherDevI in range(channel.GetNDevices()):
                             otherDev = channel.GetDevice(otherDevI)
                             otherNode = otherDev.GetNode()
-                            otherNodeView = self.get_node_view(otherNode.GetId())
+                            otherNodeView = self.get_node(otherNode.GetId())
                             if otherNode is not node:
                                 if mobility is None and not otherNodeView.has_mobility:
                                     other_node_name = "Node %i" % otherNode.GetId()
                                     graph.add_edge(node_name, other_node_name)
-                                #self.create_link(self.get_node_view(nodeI), otherNodeView)
+                                self.create_link(self.get_node(nodeI), otherNodeView)
                 else:
                     for otherDevI in range(channel.GetNDevices()):
                         otherDev = channel.GetDevice(otherDevI)
                         otherNode = otherDev.GetNode()
-                        otherNodeView = self.get_node_view(otherNode.GetId())
+                        otherNodeView = self.get_node(otherNode.GetId())
                         if otherNode is not node:
                             if mobility is None and not otherNodeView.has_mobility:
                                 other_node_name = "Node %i" % otherNode.GetId()
                                 graph.add_edge(node_name, other_node_name)
-                            self.create_link(self.get_node_view(nodeI), otherNodeView)
+                            self.create_link(self.get_node(nodeI), otherNodeView)
 
-        print "[*] scanning topology: calling graphviz layout"
+        print "scanning topology: calling graphviz layout"
         graph.layout(LAYOUT_ALGORITHM)
         for node in graph.iternodes():
             #print node, "=>", node.attr['pos']
@@ -867,14 +817,13 @@ class Visualizer(gobject.GObject):
             if node_type == 'Node':
                 obj = self.nodes[int(node_id)]
             elif node_type == 'Channel':
-                print "node_type: %s, node_id: %s" % (node_type, node_id)
                 obj = self.channels[int(node_id)]
             obj.set_position(pos_x, pos_y)
 
-        print "[*] scanning topology: all done."
+        print "scanning topology: all done."
         self.emit("topology-scanned")
 
-    def get_node_view(self, index):
+    def get_node(self, index):
         try:
             return self.nodes[index]
         except KeyError:
@@ -1000,8 +949,8 @@ class Visualizer(gobject.GObject):
         k = self.node_size_adjustment.value/5
 
         for (transmitter_id, receiver_id), (rx_bytes, rx_count) in transmissions_average.iteritems():
-            transmitter = self.get_node_view(transmitter_id)
-            receiver = self.get_node_view(receiver_id)
+            transmitter = self.get_node(transmitter_id)
+            receiver = self.get_node(receiver_id)
             try:
                 arrow, label = old_arrows.pop()
             except IndexError:
@@ -1076,7 +1025,7 @@ class Visualizer(gobject.GObject):
         k = self.node_size_adjustment.value/5
 
         for transmitter_id, (drop_bytes, drop_count) in drops_average.iteritems():
-            transmitter = self.get_node_view(transmitter_id)
+            transmitter = self.get_node(transmitter_id)
             try:
                 arrow, label = old_arrows.pop()
             except IndexError:

@@ -14,7 +14,6 @@ import sys
 
 PIXELS_PER_METER = 3.0 # pixels-per-meter, at 100% zoom level
 
-#TODO
 class PyVizObject(gobject.GObject):
     __gtype_name__ = "PyVizObject"
 
@@ -30,18 +29,14 @@ class InformationWindow(object):
         raise NotImplementedError
 
 class NetDeviceTraits(object):
-    # Edited by cqq. The default is not wireless, and is not virtual, ---add one attribute is_csma=None
-    def __init__(self, is_wireless=None, is_csma=False, is_virtual=False):
-        #Edited by cqq. Either it is virtual, or 
-        #assert is_virtual or is_wireless is not None or is_csma is not None
+    def __init__(self, is_wireless=None, is_virtual=False):
+        assert is_virtual or is_wireless is not None
         self.is_wireless = is_wireless
-        self.is_csma = is_csma
         self.is_virtual = is_virtual
 
-# Added by cqq by adding `is_csma`
 netdevice_traits = {
     ns.point_to_point.PointToPointNetDevice: NetDeviceTraits(is_wireless=False),
-    ns.csma.CsmaNetDevice: NetDeviceTraits(is_wireless=False, is_csma=True),
+    ns.csma.CsmaNetDevice: NetDeviceTraits(is_wireless=False),
     ns.wifi.WifiNetDevice: NetDeviceTraits(is_wireless=True),
     ns.bridge.BridgeNetDevice: NetDeviceTraits(is_virtual=True),
     ns.internet.LoopbackNetDevice: NetDeviceTraits(is_virtual=True, is_wireless=False),
@@ -56,12 +51,11 @@ def lookup_netdevice_traits(class_type):
     try:
         return netdevice_traits[class_type]
     except KeyError:
-        #sys.stderr.write("WARNING: no NetDeviceTraits registered for device type %r; "
-        #                 "I will assume this is a non-virtual wireless device, "
-        #                 "but you should edit %r, variable 'netdevice_traits',"
-        #                 " to make sure.\n" % (class_type.__name__, __file__))
-        #t = NetDeviceTraits(is_virtual=False, is_wireless=True)
-        t = NetDeviceTraits(is_virtual=False)   # Edited by cqq
+        sys.stderr.write("WARNING: no NetDeviceTraits registered for device type %r; "
+                         "I will assume this is a non-virtual wireless device, "
+                         "but you should edit %r, variable 'netdevice_traits',"
+                         " to make sure.\n" % (class_type.__name__, __file__))
+        t = NetDeviceTraits(is_virtual=False, is_wireless=True)
         netdevice_traits[class_type] = t
         return t
 
