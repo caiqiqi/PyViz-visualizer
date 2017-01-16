@@ -4,7 +4,7 @@ from __future__ import division
 
 LAYOUT_ALGORITHM = 'neato' # ['neato'|'dot'|'twopi'|'circo'|'fdp'|'nop']
 REPRESENT_CHANNELS_AS_NODES = 1
-DEFAULT_NODE_SIZE = 4.0 # default node size in meters
+DEFAULT_NODE_SIZE = 3.0 # default node size in meters
 DEFAULT_TRANSMISSIONS_MEMORY = 5 # default number of of past intervals whose transmissions are remembered
 BITRATE_FONT_SIZE = 10
 
@@ -155,8 +155,9 @@ class Node(PyVizObject):
         self.svg_item.set_properties(x=(x - (1-self.svg_align_x)*w),
                                      y=(y - (1-self.svg_align_y)*h))
         
-#TODO--------------------------
+# 这里是当光标放到Node上面的时候显示的提示信息
     def tooltip_query(self, tooltip):
+        # 先获取锁
         self.visualizer.simulation.lock.acquire()
         try:
             ns3_node = ns.network.NodeList.GetNode(self.node_index)
@@ -165,6 +166,7 @@ class Node(PyVizObject):
         
             name = '<b><u>Node %i</u></b>' % self.node_index
             node_name = ns.core.Names.FindName (ns3_node)
+            # 如果Node的名字长度不为0的话，则现在该名字
             if len(node_name)!=0:
                 name += ' <b>(' + node_name + ')</b>'
 
@@ -173,10 +175,12 @@ class Node(PyVizObject):
 
             self.emit("query-extra-tooltip-info", lines)
 
+            # Mobility Model
             mob = ns3_node.GetObject(ns.mobility.MobilityModel.GetTypeId())
             if mob is not None:
                 lines.append('  <b>Mobility Model</b>: %s' % mob.GetInstanceTypeId().GetName())
 
+            # 对于该Node中的所有网卡
             for devI in range(ns3_node.GetNDevices()):
                 lines.append('')
                 lines.append('  <u>NetDevice %i:</u>' % devI)
@@ -184,9 +188,12 @@ class Node(PyVizObject):
                 name = ns.core.Names.FindName(dev)
                 if name:
                     lines.append('    <b>Name:</b> %s' % name)
+                # 网卡名(即网卡类型), 
+                # ns3::CsmaNetDevice, ns3::WifiNetDevice, ns3::LoopbackNetDevice, ns3::BridgeNetDevice等等
                 devname = dev.GetInstanceTypeId().GetName()
                 lines.append('    <b>Type:</b> %s' % devname)
 
+                # 显示IP和掩码
                 if ipv4 is not None:
                     ipv4_idx = ipv4.GetInterfaceForDevice(dev)
                     if ipv4_idx != -1:
@@ -205,9 +212,11 @@ class Node(PyVizObject):
                             for i in range(ipv6.GetNAddresses(ipv6_idx))]
                         lines.append('    <b>IPv6 Addresses:</b> %s' % '; '.join(addresses))
                             
+                # 显示Mac地址
                 lines.append('    <b>MAC Address:</b> %s' % (dev.GetAddress(),))
 
             tooltip.set_markup('\n'.join(lines))
+        # 最后释放锁
         finally:
             self.visualizer.simulation.lock.release()
 
@@ -429,6 +438,7 @@ class Visualizer(gobject.GObject):
             }
 
     def __init__(self):
+        # 先断言INSTANCE为NONE，否则退出
         assert Visualizer.INSTANCE is None
         Visualizer.INSTANCE = self
         super(Visualizer, self).__init__()
@@ -482,6 +492,7 @@ class Visualizer(gobject.GObject):
             else:
                 self.simulation.set_nodes_of_interest([self.selected_node.node_index])
 
+# 创建高级选项
     def _create_advanced_controls(self):
         expander = gtk.Expander("Advanced")
         expander.show()
@@ -633,6 +644,7 @@ class Visualizer(gobject.GObject):
     def get_vadjustment(self):
         return self._scrolled_window.get_vadjustment()
 
+# 创建PyViz的界面
     def create_gui(self):
         self.window = gtk.Window()
         vbox = gtk.VBox(); vbox.show()
@@ -685,7 +697,7 @@ class Visualizer(gobject.GObject):
         _zoom_changed(zoom_adj)
 
         # speed
-        speed_adj = gtk.Adjustment(1, 0.01, 10.0, 0.02, 1.0, 0)
+        speed_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
         def _speed_changed(adj):
             self.speed = adj.value
             self.sample_period = SAMPLE_PERIOD*adj.value
@@ -698,18 +710,19 @@ class Visualizer(gobject.GObject):
         hbox.pack_start(speed, False, False, 4)
         _speed_changed(speed_adj)
 
-        # Current time
+        # Current time --- 当前的模拟时间
         self.time_label = gobject.new(gtk.Label, label="  Speed:", visible=True)
         self.time_label.set_width_chars(20)
         hbox.pack_start(self.time_label, False, False, 4)
 
-        # Screenshot button
+        # Screenshot button --- 截屏按钮
         screenshot_button = gobject.new(gtk.Button,
                                        label="Snapshot",
                                        relief=gtk.RELIEF_NONE, focus_on_click=False,
                                        visible=True)
         hbox.pack_start(screenshot_button, False, False, 4)
 
+# 载入按钮的图标
         def load_button_icon(button, icon_name):
             try:
                 import gnomedesktop
@@ -723,7 +736,7 @@ class Visualizer(gobject.GObject):
         load_button_icon(screenshot_button, "applets-screenshooter")
         screenshot_button.connect("clicked", self._take_screenshot)
 
-        # Shell button
+        # Shell button --- 打开ipython shell 的按钮
         if ipython_view is not None:
             shell_button = gobject.new(gtk.Button,
                                            label="Shell",
@@ -731,9 +744,10 @@ class Visualizer(gobject.GObject):
                                            visible=True)
             hbox.pack_start(shell_button, False, False, 4)
             load_button_icon(shell_button, "gnome-terminal")
+            # 将按钮的"clicked"事件与 _start_shell() 方法绑定
             shell_button.connect("clicked", self._start_shell)
 
-        # Play button
+        # Play button --- 运行该次模拟 的按钮
         self.play_button = gobject.new(gtk.ToggleButton,
                                        image=gobject.new(gtk.Image, stock=gtk.STOCK_MEDIA_PLAY, visible=True),
                                        label="Simulate (F3)",
@@ -743,6 +757,7 @@ class Visualizer(gobject.GObject):
         self.window.add_accel_group(accel_group)
         self.play_button.add_accelerator("clicked", accel_group,
                                          gtk.keysyms.F3, 0, gtk.ACCEL_VISIBLE)
+        # 将这个开关按钮的开关按钮事件与 _on_play_button_toggled()方法绑定
         self.play_button.connect("toggled", self._on_play_button_toggled)
         hbox.pack_start(self.play_button, False, False, 4)
 
@@ -1152,6 +1167,7 @@ class Visualizer(gobject.GObject):
                                                       self.update_view_timeout,
                                                       priority=PRIORITY_UPDATE_VIEW)
 
+# 当运行模拟开关按钮被按下之后绑定的方法
     def _on_play_button_toggled(self, button):
         if button.get_active():
             self._start_update_timer()
@@ -1480,6 +1496,7 @@ class Visualizer(gobject.GObject):
             node = self.nodes[node.GetId()]
         self.follow_node = node
 
+# 打开ipython shell的窗口
     def _start_shell(self, dummy_button):
         if self.shell_window is not None:
             self.shell_window.present()
@@ -1529,7 +1546,7 @@ def set_bounds(x1, y1, x2, y2):
         viz.canvas.set_bounds(cx1, cy1, cx2, cy2)
     add_initialization_hook(hook)
 
-
+# PyViz的入口方法
 def start():
     assert Visualizer.INSTANCE is None
     if _import_error is not None:
@@ -1542,4 +1559,5 @@ def start():
     for hook, args in initialization_hooks:
         gobject.idle_add(hook, viz, *args)
     ns.network.Packet.EnablePrinting()
+    # 这里开始Visualizer
     viz.start()
