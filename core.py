@@ -796,17 +796,21 @@ class Visualizer(gobject.GObject):
             else:
                 graph.add_node(node_name)
 
-            # node 0,  node 1 are two switches
+            # node 0,  node 1 are two "switches"
             if 0 == nodeI or 1 == nodeI:
                 if not is_node_set_color:
                     node_view.set_color("gray")
                     is_node_set_color = True
-            # node 5, node 6 are two hosts that doesnt move, acting as servers
+            # node 5, node 6 are two "hosts" that doesnt move, acting as servers
             elif 5 == nodeI or 6 == nodeI:
                 if not is_node_set_color:
                     node_view.set_color("orange")
                     is_node_set_color = True
-            
+            # node 15, is the "controller"
+            elif 15 == nodeI:
+                if not is_node_set_color:
+                    node_view.set_color("green")
+                    is_node_set_color = True
             # for any other nodes except node 0,1,5,6
             # for every device in this node
             for devI in range(node.GetNDevices()):
