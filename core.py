@@ -4,7 +4,7 @@ from __future__ import division
 
 LAYOUT_ALGORITHM = 'neato' # ['neato'|'dot'|'twopi'|'circo'|'fdp'|'nop']
 REPRESENT_CHANNELS_AS_NODES = 1
-DEFAULT_NODE_SIZE = 2.0 # default node size in meters
+DEFAULT_NODE_SIZE = 3.0 # default node size in meters
 DEFAULT_TRANSMISSIONS_MEMORY = 5 # default number of of past intervals whose transmissions are remembered
 BITRATE_FONT_SIZE = 10
 
@@ -683,8 +683,8 @@ class Visualizer(gobject.GObject):
         hbox = gtk.HBox(); hbox.show()
         vbox.pack_start(hbox, False, False, 4)
 
-        # zoom --- 缩放
-        zoom_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
+        # zoom
+        zoom_adj = gtk.Adjustment(0.7, 0.01, 10.0, 0.02, 1.0, 0)
         self.zoom = zoom_adj
         def _zoom_changed(adj):
             self.canvas.set_scale(adj.value)
@@ -696,8 +696,8 @@ class Visualizer(gobject.GObject):
         hbox.pack_start(zoom, False, False, 4)
         _zoom_changed(zoom_adj)
 
-        # speed --- 速度
-        speed_adj = gtk.Adjustment(0.5, 0.01, 10.0, 0.02, 1.0, 0)
+        # speed
+        speed_adj = gtk.Adjustment(1.0, 0.01, 10.0, 0.02, 1.0, 0)
         def _speed_changed(adj):
             self.speed = adj.value
             self.sample_period = SAMPLE_PERIOD*adj.value
